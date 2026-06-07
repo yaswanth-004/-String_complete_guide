@@ -1,0 +1,1082 @@
+# 🚀 Java String Problems — Advanced (DP, LCS, Recursion)
+
+> Longest Common Substring, LCS DP, Palindrome DP, Index Movement, Recursion patterns, and advanced string algorithms.
+
+---
+
+## 📌 Table of Contents
+
+1. [Longest Common Substring](#1-longest-common-substring)
+2. [Longest Common Subsequence (LCS)](#2-longest-common-subsequence-lcs)
+3. [Palindrome Problems — DP](#3-palindrome-problems--dp)
+4. [Edit Distance (Levenshtein)](#4-edit-distance-levenshtein)
+5. [Distinct Subsequences](#5-distinct-subsequences)
+6. [Wildcard Pattern Matching](#6-wildcard-pattern-matching)
+7. [String Comparison Techniques](#7-string-comparison-techniques)
+8. [Index Movement Patterns in Strings](#8-index-movement-patterns-in-strings)
+9. [Recursion Patterns for Strings](#9-recursion-patterns-for-strings)
+10. [Z Algorithm — Pattern Matching](#10-z-algorithm--pattern-matching)
+11. [KMP Algorithm — Pattern Matching](#11-kmp-algorithm--pattern-matching)
+12. [Rabin-Karp — Rolling Hash](#12-rabin-karp--rolling-hash)
+13. [Minimum Window Substring](#13-minimum-window-substring)
+14. [Longest Repeating Substring](#14-longest-repeating-substring)
+15. [String Interleaving (DP)](#15-string-interleaving-dp)
+16. [Word Break Problem (DP)](#16-word-break-problem-dp)
+17. [Shortest Palindrome (Make Palindrome by Adding)](#17-shortest-palindrome-make-palindrome-by-adding)
+18. [Scramble String (DP)](#18-scramble-string-dp)
+
+---
+
+## 1. Longest Common Substring
+
+Find the longest substring that appears in both strings **contiguously**.
+
+### DP Table Approach
+```
+         ""  a  b  c  d  a  f
+      "" [0, 0, 0, 0, 0, 0, 0]
+      z  [0, 0, 0, 0, 0, 0, 0]
+      b  [0, 0, 1, 0, 0, 0, 0]
+      c  [0, 0, 0, 2, 0, 0, 0]
+      d  [0, 0, 0, 0, 3, 0, 0]
+      f  [0, 0, 0, 0, 0, 0, 1]
+```
+
+```java
+// dp[i][j] = length of LCS ending at s1[i-1] and s2[j-1]
+// Time: O(m*n) | Space: O(m*n)
+public static String longestCommonSubstring(String s1, String s2) {
+    int m = s1.length(), n = s2.length();
+    int[][] dp = new int[m + 1][n + 1];
+    int maxLen = 0, endIndex = 0;
+
+    for (int i = 1; i <= m; i++) {
+        for (int j = 1; j <= n; j++) {
+            if (s1.charAt(i - 1) == s2.charAt(j - 1)) {
+                dp[i][j] = dp[i - 1][j - 1] + 1;
+                if (dp[i][j] > maxLen) {
+                    maxLen = dp[i][j];
+                    endIndex = i; // end of LCS in s1
+                }
+            } else {
+                dp[i][j] = 0; // must be contiguous — reset!
+            }
+        }
+    }
+    return s1.substring(endIndex - maxLen, endIndex);
+}
+```
+
+### Space-Optimized (O(n)):
+```java
+// Time: O(m*n) | Space: O(n)
+public static int longestCommonSubstringLength(String s1, String s2) {
+    int m = s1.length(), n = s2.length();
+    int[] prev = new int[n + 1];
+    int maxLen = 0;
+
+    for (int i = 1; i <= m; i++) {
+        int[] curr = new int[n + 1];
+        for (int j = 1; j <= n; j++) {
+            if (s1.charAt(i - 1) == s2.charAt(j - 1)) {
+                curr[j] = prev[j - 1] + 1;
+                maxLen = Math.max(maxLen, curr[j]);
+            }
+        }
+        prev = curr;
+    }
+    return maxLen;
+}
+```
+
+### Test Cases:
+```
+s1 = "abcdef", s2 = "bcdf"  → "bcd" (length 3)
+s1 = "ABCBDAB", s2 = "BDCAB" → "AB" (length 2)
+s1 = "xyz", s2 = "abc"       → "" (length 0)
+```
+
+---
+
+## 2. Longest Common Subsequence (LCS)
+
+Find the longest subsequence common to both strings (characters **need not be contiguous**).
+
+### Recurrence:
+```
+if s1[i-1] == s2[j-1]:
+    dp[i][j] = 1 + dp[i-1][j-1]
+else:
+    dp[i][j] = max(dp[i-1][j], dp[i][j-1])
+```
+
+### DP Table Approach:
+```java
+// Time: O(m*n) | Space: O(m*n)
+public static int lcs(String s1, String s2) {
+    int m = s1.length(), n = s2.length();
+    int[][] dp = new int[m + 1][n + 1];
+
+    for (int i = 1; i <= m; i++) {
+        for (int j = 1; j <= n; j++) {
+            if (s1.charAt(i - 1) == s2.charAt(j - 1)) {
+                dp[i][j] = 1 + dp[i - 1][j - 1];
+            } else {
+                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+            }
+        }
+    }
+    return dp[m][n];
+}
+
+// Reconstruct the actual LCS string
+public static String lcsString(String s1, String s2) {
+    int m = s1.length(), n = s2.length();
+    int[][] dp = new int[m + 1][n + 1];
+
+    for (int i = 1; i <= m; i++)
+        for (int j = 1; j <= n; j++)
+            dp[i][j] = s1.charAt(i-1) == s2.charAt(j-1)
+                ? 1 + dp[i-1][j-1]
+                : Math.max(dp[i-1][j], dp[i][j-1]);
+
+    // Backtrack
+    StringBuilder sb = new StringBuilder();
+    int i = m, j = n;
+    while (i > 0 && j > 0) {
+        if (s1.charAt(i-1) == s2.charAt(j-1)) {
+            sb.append(s1.charAt(i-1));
+            i--; j--;
+        } else if (dp[i-1][j] > dp[i][j-1]) {
+            i--;
+        } else {
+            j--;
+        }
+    }
+    return sb.reverse().toString();
+}
+```
+
+### Recursion with Memoization:
+```java
+// Top-down DP
+private static int[][] memo;
+
+public static int lcsMemo(String s1, String s2, int i, int j) {
+    if (i == 0 || j == 0) return 0;
+    if (memo[i][j] != -1) return memo[i][j];
+
+    if (s1.charAt(i - 1) == s2.charAt(j - 1)) {
+        memo[i][j] = 1 + lcsMemo(s1, s2, i - 1, j - 1);
+    } else {
+        memo[i][j] = Math.max(
+            lcsMemo(s1, s2, i - 1, j),
+            lcsMemo(s1, s2, i, j - 1)
+        );
+    }
+    return memo[i][j];
+}
+// Initialize: memo = new int[m+1][n+1]; fill with -1;
+// Call: lcsMemo(s1, s2, m, n);
+```
+
+### LCS Applications:
+```java
+// Shortest Common Supersequence length
+// SCS = m + n - LCS(s1, s2)
+public static int shortestCommonSupersequence(String s1, String s2) {
+    return s1.length() + s2.length() - lcs(s1, s2);
+}
+
+// Minimum deletions to make strings equal
+// minDel = m + n - 2*LCS
+public static int minDeletions(String s1, String s2) {
+    return s1.length() + s2.length() - 2 * lcs(s1, s2);
+}
+```
+
+---
+
+## 3. Palindrome Problems — DP
+
+### 3.1 Longest Palindromic Subsequence
+
+```java
+// LPS(s) = LCS(s, reverse(s))
+// Or directly:
+
+// Time: O(n²) | Space: O(n²)
+public static int longestPalindromicSubsequence(String s) {
+    int n = s.length();
+    int[][] dp = new int[n][n];
+
+    // Every single char is palindrome of length 1
+    for (int i = 0; i < n; i++) dp[i][i] = 1;
+
+    // Fill for increasing lengths
+    for (int len = 2; len <= n; len++) {
+        for (int i = 0; i <= n - len; i++) {
+            int j = i + len - 1;
+            if (s.charAt(i) == s.charAt(j)) {
+                dp[i][j] = 2 + (len == 2 ? 0 : dp[i + 1][j - 1]);
+            } else {
+                dp[i][j] = Math.max(dp[i + 1][j], dp[i][j - 1]);
+            }
+        }
+    }
+    return dp[0][n - 1];
+}
+```
+
+### 3.2 Minimum Insertions to Make Palindrome
+
+```java
+// Min insertions = n - LPS(s)
+public static int minInsertions(String s) {
+    return s.length() - longestPalindromicSubsequence(s);
+}
+```
+
+### 3.3 Count Palindromic Substrings (DP)
+
+```java
+// Time: O(n²) | Space: O(n²)
+public static int countPalindromes(String s) {
+    int n = s.length(), count = 0;
+    boolean[][] dp = new boolean[n][n];
+
+    // All single chars
+    for (int i = 0; i < n; i++) { dp[i][i] = true; count++; }
+
+    // All pairs
+    for (int i = 0; i < n - 1; i++) {
+        if (s.charAt(i) == s.charAt(i + 1)) {
+            dp[i][i + 1] = true;
+            count++;
+        }
+    }
+
+    // Length 3+
+    for (int len = 3; len <= n; len++) {
+        for (int i = 0; i <= n - len; i++) {
+            int j = i + len - 1;
+            if (s.charAt(i) == s.charAt(j) && dp[i + 1][j - 1]) {
+                dp[i][j] = true;
+                count++;
+            }
+        }
+    }
+    return count;
+}
+```
+
+### 3.4 Palindrome Partitioning — Minimum Cuts (DP)
+
+```java
+// Minimum cuts to partition string into all palindromes
+// Time: O(n²) | Space: O(n²)
+public static int minCut(String s) {
+    int n = s.length();
+    boolean[][] isPalin = new boolean[n][n];
+
+    // Precompute palindrome table
+    for (int i = n - 1; i >= 0; i--) {
+        for (int j = i; j < n; j++) {
+            isPalin[i][j] = s.charAt(i) == s.charAt(j)
+                && (j - i <= 2 || isPalin[i + 1][j - 1]);
+        }
+    }
+
+    // dp[i] = min cuts for s[0..i]
+    int[] dp = new int[n];
+    Arrays.fill(dp, Integer.MAX_VALUE);
+
+    for (int i = 0; i < n; i++) {
+        if (isPalin[0][i]) {
+            dp[i] = 0;
+        } else {
+            for (int j = 1; j <= i; j++) {
+                if (isPalin[j][i] && dp[j - 1] != Integer.MAX_VALUE) {
+                    dp[i] = Math.min(dp[i], dp[j - 1] + 1);
+                }
+            }
+        }
+    }
+    return dp[n - 1];
+}
+```
+
+### 3.5 Palindrome Check with Recursion + Memo:
+```java
+// dp[i][j] = is s[i..j] a palindrome?
+private static int[][] palMemo;
+
+public static boolean isPalindrome(String s, int i, int j) {
+    if (i >= j) return true;
+    if (palMemo[i][j] != -1) return palMemo[i][j] == 1;
+
+    boolean result = s.charAt(i) == s.charAt(j) && isPalindrome(s, i+1, j-1);
+    palMemo[i][j] = result ? 1 : 0;
+    return result;
+}
+```
+
+---
+
+## 4. Edit Distance (Levenshtein)
+
+Minimum operations (insert, delete, replace) to convert s1 to s2.
+
+### Recurrence:
+```
+if s1[i-1] == s2[j-1]: dp[i][j] = dp[i-1][j-1]
+else: dp[i][j] = 1 + min(dp[i-1][j],    ← delete from s1
+                          dp[i][j-1],    ← insert into s1
+                          dp[i-1][j-1]) ← replace
+```
+
+```java
+// Time: O(m*n) | Space: O(m*n)
+public static int editDistance(String s1, String s2) {
+    int m = s1.length(), n = s2.length();
+    int[][] dp = new int[m + 1][n + 1];
+
+    for (int i = 0; i <= m; i++) dp[i][0] = i;
+    for (int j = 0; j <= n; j++) dp[0][j] = j;
+
+    for (int i = 1; i <= m; i++) {
+        for (int j = 1; j <= n; j++) {
+            if (s1.charAt(i - 1) == s2.charAt(j - 1)) {
+                dp[i][j] = dp[i - 1][j - 1];
+            } else {
+                dp[i][j] = 1 + Math.min(dp[i - 1][j - 1],
+                               Math.min(dp[i - 1][j], dp[i][j - 1]));
+            }
+        }
+    }
+    return dp[m][n];
+}
+```
+
+### Space-Optimized O(n):
+```java
+public static int editDistanceOptimized(String s1, String s2) {
+    int m = s1.length(), n = s2.length();
+    int[] prev = new int[n + 1];
+    for (int j = 0; j <= n; j++) prev[j] = j;
+
+    for (int i = 1; i <= m; i++) {
+        int[] curr = new int[n + 1];
+        curr[0] = i;
+        for (int j = 1; j <= n; j++) {
+            if (s1.charAt(i - 1) == s2.charAt(j - 1)) {
+                curr[j] = prev[j - 1];
+            } else {
+                curr[j] = 1 + Math.min(prev[j - 1], Math.min(prev[j], curr[j - 1]));
+            }
+        }
+        prev = curr;
+    }
+    return prev[n];
+}
+```
+
+---
+
+## 5. Distinct Subsequences
+
+Count distinct occurrences of t as a subsequence of s.
+
+```java
+// s = "rabbbit", t = "rabbit" → 3
+// Time: O(m*n) | Space: O(m*n)
+public static int numDistinct(String s, String t) {
+    int m = s.length(), n = t.length();
+    long[][] dp = new long[m + 1][n + 1];
+
+    for (int i = 0; i <= m; i++) dp[i][0] = 1; // empty t always matches
+
+    for (int i = 1; i <= m; i++) {
+        for (int j = 1; j <= n; j++) {
+            dp[i][j] = dp[i - 1][j]; // skip s[i]
+            if (s.charAt(i - 1) == t.charAt(j - 1)) {
+                dp[i][j] += dp[i - 1][j - 1]; // use s[i]
+            }
+        }
+    }
+    return (int) dp[m][n];
+}
+```
+
+---
+
+## 6. Wildcard Pattern Matching
+
+`?` matches any single char. `*` matches any sequence (including empty).
+
+```java
+// Time: O(m*n) | Space: O(m*n)
+public static boolean isMatch(String s, String p) {
+    int m = s.length(), n = p.length();
+    boolean[][] dp = new boolean[m + 1][n + 1];
+    dp[0][0] = true;
+
+    // Pattern of only '*' can match empty string
+    for (int j = 1; j <= n; j++) {
+        if (p.charAt(j - 1) == '*') dp[0][j] = dp[0][j - 1];
+    }
+
+    for (int i = 1; i <= m; i++) {
+        for (int j = 1; j <= n; j++) {
+            char pc = p.charAt(j - 1);
+            if (pc == '*') {
+                dp[i][j] = dp[i - 1][j] || dp[i][j - 1];
+                // dp[i-1][j]: * matches one char of s
+                // dp[i][j-1]: * matches empty
+            } else if (pc == '?' || s.charAt(i - 1) == pc) {
+                dp[i][j] = dp[i - 1][j - 1];
+            }
+        }
+    }
+    return dp[m][n];
+}
+```
+
+---
+
+## 7. String Comparison Techniques
+
+### Lexicographic Comparison:
+```java
+// compareTo: char by char, returns difference at first mismatch
+"apple".compareTo("application"); // 'e' - 'i' = -4 (negative → apple < application)
+
+// Custom comparator for sorting
+String[] words = {"banana", "apple", "cherry"};
+Arrays.sort(words);                          // lexicographic
+Arrays.sort(words, (a, b) -> b.compareTo(a)); // reverse
+Arrays.sort(words, Comparator.comparingInt(String::length)); // by length
+```
+
+### Moving Index for Comparison:
+```java
+// Compare two strings starting from different indices
+public static boolean compareFrom(String s1, int i, String s2, int j, int len) {
+    for (int k = 0; k < len; k++) {
+        if (i + k >= s1.length() || j + k >= s2.length()) return false;
+        if (s1.charAt(i + k) != s2.charAt(j + k)) return false;
+    }
+    return true;
+}
+
+// Sliding comparison for pattern detection
+public static boolean contains(String text, String pattern) {
+    int n = text.length(), m = pattern.length();
+    for (int i = 0; i <= n - m; i++) {
+        if (compareFrom(text, i, pattern, 0, m)) return true;
+    }
+    return false;
+}
+```
+
+---
+
+## 8. Index Movement Patterns in Strings
+
+### Two Pointer:
+```java
+// Inward movement — palindrome check
+int l = 0, r = s.length() - 1;
+while (l < r) {
+    if (s.charAt(l) != s.charAt(r)) return false;
+    l++; r--;
+}
+
+// One pointer forward, one backward — reverse
+while (l < r) {
+    char temp = arr[l];
+    arr[l++] = arr[r];
+    arr[r--] = temp;
+}
+```
+
+### Sliding Window:
+```java
+// Fixed-size window of size k
+int[] freq = new int[26];
+for (int i = 0; i < k; i++) freq[s.charAt(i) - 'a']++;
+
+for (int i = k; i < s.length(); i++) {
+    freq[s.charAt(i) - 'a']++;       // add new char
+    freq[s.charAt(i - k) - 'a']--;   // remove old char
+    // process window
+}
+```
+
+### Fast and Slow Pointer (Cycle Detection in Strings):
+```java
+// Find pattern start
+int slow = 0, fast = 0;
+while (fast < n && condition) {
+    fast++;
+    if (anotherCondition) slow++;
+}
+```
+
+### Skip Pointer (Jump Indices):
+```java
+// Used in KMP — skip already matched characters
+int[] lps = computeLPS(pattern);
+int i = 0, j = 0; // i for text, j for pattern
+while (i < text.length()) {
+    if (text.charAt(i) == pattern.charAt(j)) {
+        i++; j++;
+    }
+    if (j == pattern.length()) {
+        // found match
+        j = lps[j - 1]; // jump using LPS table
+    } else if (i < text.length() && text.charAt(i) != pattern.charAt(j)) {
+        if (j != 0) j = lps[j - 1]; // skip ahead
+        else i++;
+    }
+}
+```
+
+---
+
+## 9. Recursion Patterns for Strings
+
+### Pattern 1: Process each character
+```java
+// Generate all subsequences
+public static List<String> subsequences(String s) {
+    List<String> result = new ArrayList<>();
+    generateSubs(s, 0, new StringBuilder(), result);
+    return result;
+}
+
+private static void generateSubs(String s, int idx, StringBuilder curr, List<String> res) {
+    if (idx == s.length()) {
+        res.add(curr.toString());
+        return;
+    }
+    // Include current char
+    curr.append(s.charAt(idx));
+    generateSubs(s, idx + 1, curr, res);
+    curr.deleteCharAt(curr.length() - 1);
+
+    // Exclude current char
+    generateSubs(s, idx + 1, curr, res);
+}
+```
+
+### Pattern 2: Split into prefix + suffix
+```java
+// All permutations
+public static List<String> permutations(String s) {
+    List<String> result = new ArrayList<>();
+    permHelper("", s, result);
+    return result;
+}
+
+private static void permHelper(String prefix, String remaining, List<String> result) {
+    if (remaining.isEmpty()) {
+        result.add(prefix);
+        return;
+    }
+    for (int i = 0; i < remaining.length(); i++) {
+        permHelper(
+            prefix + remaining.charAt(i),
+            remaining.substring(0, i) + remaining.substring(i + 1),
+            result
+        );
+    }
+}
+```
+
+### Pattern 3: Reduce string size (top-down)
+```java
+// Recursive palindrome with memoization
+public static boolean isPalindromeRecur(String s, int l, int r, Map<String, Boolean> memo) {
+    if (l >= r) return true;
+    String key = l + "," + r;
+    if (memo.containsKey(key)) return memo.get(key);
+
+    boolean result = s.charAt(l) == s.charAt(r)
+        && isPalindromeRecur(s, l + 1, r - 1, memo);
+    memo.put(key, result);
+    return result;
+}
+```
+
+### Pattern 4: Interleave strings (recursion + DP)
+```java
+public static boolean isInterleave(String s1, String s2, String s3,
+                                    int i, int j, int k, Boolean[][] memo) {
+    if (k == s3.length()) return i == s1.length() && j == s2.length();
+    if (memo[i][j] != null) return memo[i][j];
+
+    boolean res = false;
+    if (i < s1.length() && s1.charAt(i) == s3.charAt(k))
+        res = isInterleave(s1, s2, s3, i+1, j, k+1, memo);
+    if (!res && j < s2.length() && s2.charAt(j) == s3.charAt(k))
+        res = isInterleave(s1, s2, s3, i, j+1, k+1, memo);
+
+    return memo[i][j] = res;
+}
+```
+
+---
+
+## 10. Z Algorithm — Pattern Matching
+
+Z-array: `Z[i]` = length of longest substring starting at `i` that matches prefix of string.
+
+```java
+// Time: O(n) | Space: O(n)
+public static int[] zFunction(String s) {
+    int n = s.length();
+    int[] Z = new int[n];
+    int l = 0, r = 0;
+
+    for (int i = 1; i < n; i++) {
+        if (i < r) Z[i] = Math.min(r - i, Z[i - l]);
+
+        while (i + Z[i] < n && s.charAt(Z[i]) == s.charAt(i + Z[i])) {
+            Z[i]++;
+        }
+        if (i + Z[i] > r) { l = i; r = i + Z[i]; }
+    }
+    return Z;
+}
+
+// Pattern search using Z
+public static List<Integer> searchZ(String text, String pattern) {
+    String concat = pattern + "$" + text;
+    int[] Z = zFunction(concat);
+    List<Integer> matches = new ArrayList<>();
+    int m = pattern.length();
+
+    for (int i = m + 1; i < concat.length(); i++) {
+        if (Z[i] == m) matches.add(i - m - 1);
+    }
+    return matches;
+}
+```
+
+---
+
+## 11. KMP Algorithm — Pattern Matching
+
+Knuth-Morris-Pratt avoids re-matching by precomputing the LPS (Longest Proper Prefix which is also Suffix) array.
+
+```java
+// Build LPS table
+// Time: O(m)
+public static int[] computeLPS(String pattern) {
+    int m = pattern.length();
+    int[] lps = new int[m];
+    int len = 0, i = 1;
+
+    while (i < m) {
+        if (pattern.charAt(i) == pattern.charAt(len)) {
+            lps[i++] = ++len;
+        } else if (len != 0) {
+            len = lps[len - 1]; // backtrack
+        } else {
+            lps[i++] = 0;
+        }
+    }
+    return lps;
+}
+
+// KMP Search
+// Time: O(n + m) | Space: O(m)
+public static List<Integer> kmpSearch(String text, String pattern) {
+    int n = text.length(), m = pattern.length();
+    int[] lps = computeLPS(pattern);
+    List<Integer> result = new ArrayList<>();
+    int i = 0, j = 0;
+
+    while (i < n) {
+        if (text.charAt(i) == pattern.charAt(j)) {
+            i++; j++;
+        }
+        if (j == m) {
+            result.add(i - j);
+            j = lps[j - 1];
+        } else if (i < n && text.charAt(i) != pattern.charAt(j)) {
+            if (j != 0) j = lps[j - 1];
+            else i++;
+        }
+    }
+    return result;
+}
+```
+
+### LPS Example:
+```
+pattern: "AABAAB"
+LPS:     [0,1,0,1,2,3]
+
+Meaning:
+A  → no proper prefix = suffix → 0
+AA → "A" = prefix = suffix → 1
+AAB → none → 0
+AABA → "A" = suffix and prefix → 1
+AABAA → "AA" → 2
+AABAAB → "AAB" → 3
+```
+
+---
+
+## 12. Rabin-Karp — Rolling Hash
+
+Pattern matching using hashing — avoids char-by-char comparison in most cases.
+
+```java
+// Time: O(n+m) average, O(n*m) worst | Space: O(1)
+public static List<Integer> rabinKarp(String text, String pattern) {
+    int n = text.length(), m = pattern.length();
+    int base = 26, mod = 1_000_000_007;
+    List<Integer> result = new ArrayList<>();
+
+    long patHash = 0, winHash = 0, power = 1;
+
+    // Compute base^(m-1) % mod
+    for (int i = 0; i < m - 1; i++) power = power * base % mod;
+
+    // Initial hashes
+    for (int i = 0; i < m; i++) {
+        patHash = (patHash * base + pattern.charAt(i)) % mod;
+        winHash = (winHash * base + text.charAt(i)) % mod;
+    }
+
+    for (int i = 0; i <= n - m; i++) {
+        if (winHash == patHash) {
+            // Verify (avoid hash collision)
+            if (text.substring(i, i + m).equals(pattern)) {
+                result.add(i);
+            }
+        }
+        if (i < n - m) {
+            // Roll hash: remove leftmost, add new rightmost
+            winHash = (winHash - text.charAt(i) * power % mod + mod) % mod;
+            winHash = (winHash * base + text.charAt(i + m)) % mod;
+        }
+    }
+    return result;
+}
+```
+
+---
+
+## 13. Minimum Window Substring
+
+Find smallest window in s that contains all chars of t.
+
+```java
+// Time: O(n) | Space: O(k)
+public static String minWindow(String s, String t) {
+    if (s.isEmpty() || t.isEmpty()) return "";
+
+    int[] need = new int[128];
+    for (char c : t.toCharArray()) need[c]++;
+
+    int left = 0, right = 0;
+    int formed = 0, required = (int) t.chars().distinct().count();
+    int[] window = new int[128];
+
+    int minLen = Integer.MAX_VALUE, minLeft = 0;
+
+    while (right < s.length()) {
+        char c = s.charAt(right++);
+        window[c]++;
+        if (need[c] > 0 && window[c] == need[c]) formed++;
+
+        while (formed == required) {
+            if (right - left < minLen) {
+                minLen = right - left;
+                minLeft = left;
+            }
+            char lc = s.charAt(left++);
+            window[lc]--;
+            if (need[lc] > 0 && window[lc] < need[lc]) formed--;
+        }
+    }
+    return minLen == Integer.MAX_VALUE ? "" : s.substring(minLeft, minLeft + minLen);
+}
+```
+
+---
+
+## 14. Longest Repeating Substring
+
+```java
+// Binary Search + Rolling Hash
+// Time: O(n log n) | Space: O(n)
+public static String longestRepeatingSubstring(String s) {
+    int n = s.length(), lo = 1, hi = n - 1;
+    String result = "";
+
+    while (lo <= hi) {
+        int mid = (lo + hi) / 2;
+        String candidate = search(s, mid);
+        if (!candidate.isEmpty()) {
+            result = candidate;
+            lo = mid + 1;
+        } else {
+            hi = mid - 1;
+        }
+    }
+    return result;
+}
+
+private static String search(String s, int len) {
+    Set<Long> seen = new HashSet<>();
+    long base = 26, mod = 1_000_000_007L;
+    long hash = 0, power = 1;
+
+    for (int i = 0; i < len; i++) {
+        hash = (hash * base + s.charAt(i)) % mod;
+        if (i > 0) power = power * base % mod;
+    }
+    seen.add(hash);
+
+    for (int i = len; i < s.length(); i++) {
+        hash = (hash - s.charAt(i - len) * power % mod + mod) % mod;
+        hash = (hash * base + s.charAt(i)) % mod;
+        if (!seen.add(hash)) return s.substring(i - len + 1, i + 1);
+    }
+    return "";
+}
+```
+
+---
+
+## 15. String Interleaving (DP)
+
+Check if s3 is formed by interleaving s1 and s2.
+
+```java
+// Time: O(m*n) | Space: O(m*n)
+public static boolean isInterleave(String s1, String s2, String s3) {
+    int m = s1.length(), n = s2.length();
+    if (m + n != s3.length()) return false;
+
+    boolean[][] dp = new boolean[m + 1][n + 1];
+    dp[0][0] = true;
+
+    for (int i = 1; i <= m; i++)
+        dp[i][0] = dp[i-1][0] && s1.charAt(i-1) == s3.charAt(i-1);
+
+    for (int j = 1; j <= n; j++)
+        dp[0][j] = dp[0][j-1] && s2.charAt(j-1) == s3.charAt(j-1);
+
+    for (int i = 1; i <= m; i++) {
+        for (int j = 1; j <= n; j++) {
+            dp[i][j] = (dp[i-1][j] && s1.charAt(i-1) == s3.charAt(i+j-1))
+                     || (dp[i][j-1] && s2.charAt(j-1) == s3.charAt(i+j-1));
+        }
+    }
+    return dp[m][n];
+}
+```
+
+---
+
+## 16. Word Break Problem (DP)
+
+Can string s be segmented into words from dictionary?
+
+```java
+// Time: O(n²) | Space: O(n)
+public static boolean wordBreak(String s, List<String> wordDict) {
+    Set<String> dict = new HashSet<>(wordDict);
+    int n = s.length();
+    boolean[] dp = new boolean[n + 1];
+    dp[0] = true;
+
+    for (int i = 1; i <= n; i++) {
+        for (int j = 0; j < i; j++) {
+            if (dp[j] && dict.contains(s.substring(j, i))) {
+                dp[i] = true;
+                break;
+            }
+        }
+    }
+    return dp[n];
+}
+
+// Return all valid sentences
+public static List<String> wordBreakAll(String s, List<String> wordDict) {
+    Set<String> dict = new HashSet<>(wordDict);
+    Map<Integer, List<String>> memo = new HashMap<>();
+    return helper(s, 0, dict, memo);
+}
+
+private static List<String> helper(String s, int start,
+                                    Set<String> dict, Map<Integer, List<String>> memo) {
+    if (memo.containsKey(start)) return memo.get(start);
+    List<String> result = new ArrayList<>();
+    if (start == s.length()) { result.add(""); return result; }
+
+    for (int end = start + 1; end <= s.length(); end++) {
+        String word = s.substring(start, end);
+        if (dict.contains(word)) {
+            for (String rest : helper(s, end, dict, memo)) {
+                result.add(word + (rest.isEmpty() ? "" : " " + rest));
+            }
+        }
+    }
+    memo.put(start, result);
+    return result;
+}
+```
+
+---
+
+## 17. Shortest Palindrome (Make Palindrome by Adding)
+
+Add minimum characters at the **front** to make the string a palindrome.
+
+```java
+// KMP approach
+// Time: O(n) | Space: O(n)
+public static String shortestPalindrome(String s) {
+    String rev = new StringBuilder(s).reverse().toString();
+    String concat = s + "#" + rev;
+    int[] lps = computeLPS(concat);
+
+    int matchLen = lps[concat.length() - 1];
+    String suffix = rev.substring(0, s.length() - matchLen);
+    return suffix + s;
+}
+
+private static int[] computeLPS(String p) {
+    int m = p.length();
+    int[] lps = new int[m];
+    int len = 0, i = 1;
+    while (i < m) {
+        if (p.charAt(i) == p.charAt(len)) lps[i++] = ++len;
+        else if (len != 0) len = lps[len - 1];
+        else lps[i++] = 0;
+    }
+    return lps;
+}
+```
+
+---
+
+## 18. Scramble String (DP)
+
+```java
+// s1 = "great", s2 = "rgeat" — scrambled
+// Time: O(n^4) | Space: O(n^3)
+private static Map<String, Boolean> memo = new HashMap<>();
+
+public static boolean isScramble(String s1, String s2) {
+    if (s1.equals(s2)) return true;
+    String key = s1 + "#" + s2;
+    if (memo.containsKey(key)) return memo.get(key);
+
+    int n = s1.length();
+    int[] freq = new int[26];
+    for (int i = 0; i < n; i++) {
+        freq[s1.charAt(i) - 'a']++;
+        freq[s2.charAt(i) - 'a']--;
+    }
+    for (int f : freq) if (f != 0) { memo.put(key, false); return false; }
+
+    for (int len = 1; len < n; len++) {
+        // No swap
+        if (isScramble(s1.substring(0, len), s2.substring(0, len))
+         && isScramble(s1.substring(len), s2.substring(len))) {
+            memo.put(key, true); return true;
+        }
+        // With swap
+        if (isScramble(s1.substring(0, len), s2.substring(n - len))
+         && isScramble(s1.substring(len), s2.substring(0, n - len))) {
+            memo.put(key, true); return true;
+        }
+    }
+    memo.put(key, false);
+    return false;
+}
+```
+
+---
+
+## 📊 Algorithm Complexity Summary
+
+| Algorithm | Time | Space | Use Case |
+|-----------|------|-------|----------|
+| Longest Common Substring | O(m×n) | O(m×n) | Find max common segment |
+| LCS (Subsequence) | O(m×n) | O(m×n) | Non-contiguous common chars |
+| Edit Distance | O(m×n) | O(m×n) | String similarity |
+| Longest Palindromic Subsequence | O(n²) | O(n²) | Palindrome optimization |
+| Min Palindrome Cuts | O(n²) | O(n²) | Partition palindromes |
+| KMP Search | O(n+m) | O(m) | Pattern in text |
+| Z Algorithm | O(n) | O(n) | Pattern matching |
+| Rabin-Karp | O(n+m) avg | O(1) | Multi-pattern matching |
+| Min Window Substring | O(n) | O(k) | Smallest covering window |
+| Word Break | O(n²) | O(n) | Dictionary segmentation |
+| Wildcard Matching | O(m×n) | O(m×n) | ? and * patterns |
+
+---
+
+## 🔁 DP Template for String Problems
+
+```java
+// General 2D DP template
+int m = s1.length(), n = s2.length();
+int[][] dp = new int[m + 1][n + 1];
+
+// Base case: empty string
+for (int i = 0; i <= m; i++) dp[i][0] = /* base value */;
+for (int j = 0; j <= n; j++) dp[0][j] = /* base value */;
+
+// Fill DP table
+for (int i = 1; i <= m; i++) {
+    for (int j = 1; j <= n; j++) {
+        if (s1.charAt(i-1) == s2.charAt(j-1)) {
+            dp[i][j] = /* match case */;
+        } else {
+            dp[i][j] = /* mismatch case: combine subproblems */;
+        }
+    }
+}
+return dp[m][n];
+```
+
+---
+
+## 🔍 Key Decision Guide
+
+```
+String problem type?
+├── Pattern search in text?
+│   ├── Single pattern, performance critical → KMP / Z Algorithm
+│   ├── Multiple patterns → Rabin-Karp / Aho-Corasick
+│   └── Simple → s.contains() or s.indexOf()
+│
+├── Two string comparison?
+│   ├── Contiguous common → Longest Common Substring (DP)
+│   ├── Non-contiguous common → LCS (DP)
+│   ├── Transform s1 to s2 → Edit Distance (DP)
+│   └── Matching with wildcards → Wildcard DP
+│
+├── Palindrome problem?
+│   ├── Check single → Two Pointer O(n)
+│   ├── Longest palindrome substring → Expand Center O(n²)
+│   ├── Longest palindrome subsequence → DP O(n²)
+│   └── Min cuts → Palindrome Partitioning DP
+│
+└── Substring/window problems?
+    ├── Fixed window → Sliding Window + frequency array
+    └── Variable window → Two pointer + HashMap
+```
+
+---
+
+*🌟 Practice these on LeetCode: #5, #72, #115, #132, #139, #214, #516, #647, #1143*
