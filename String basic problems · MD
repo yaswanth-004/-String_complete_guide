@@ -1,0 +1,676 @@
+# 🔤 Java String Problems — Basic to Intermediate
+
+> Palindrome, Anagram, Isomorphism, Frequency Counting, Bucket Algorithm, and more.
+
+---
+
+## 📌 Table of Contents
+
+1. [Palindrome Check](#1-palindrome-check)
+2. [Anagram Check](#2-anagram-check)
+3. [Isomorphic Strings](#3-isomorphic-strings)
+4. [Character Frequency Count](#4-character-frequency-count)
+5. [Bucket Algorithm Problems](#5-bucket-algorithm-problems)
+6. [First Non-Repeating Character](#6-first-non-repeating-character)
+7. [Count Vowels and Consonants](#7-count-vowels-and-consonants)
+8. [Remove Duplicates from String](#8-remove-duplicates-from-string)
+9. [Check if String is Rotation](#9-check-if-string-is-rotation)
+10. [String Compression (Run-Length Encoding)](#10-string-compression-run-length-encoding)
+11. [Valid Parentheses (String)](#11-valid-parentheses-string)
+12. [Word Frequency Count](#12-word-frequency-count)
+13. [Group Anagrams Together](#13-group-anagrams-together)
+14. [Longest Palindromic Substring (Expand)](#14-longest-palindromic-substring-expand)
+15. [Count and Say](#15-count-and-say)
+
+---
+
+## 1. Palindrome Check
+
+A string is a palindrome if it reads the same forward and backward.
+
+### Approach 1: Two Pointer
+```java
+// Time: O(n) | Space: O(1)
+public static boolean isPalindrome(String s) {
+    int left = 0, right = s.length() - 1;
+    while (left < right) {
+        if (s.charAt(left) != s.charAt(right)) return false;
+        left++;
+        right--;
+    }
+    return true;
+}
+```
+
+### Approach 2: StringBuilder Reverse
+```java
+// Time: O(n) | Space: O(n)
+public static boolean isPalindrome(String s) {
+    String reversed = new StringBuilder(s).reverse().toString();
+    return s.equals(reversed);
+}
+```
+
+### Approach 3: Recursive
+```java
+// Time: O(n) | Space: O(n) call stack
+public static boolean isPalindrome(String s, int left, int right) {
+    if (left >= right) return true;
+    if (s.charAt(left) != s.charAt(right)) return false;
+    return isPalindrome(s, left + 1, right - 1);
+}
+// Call: isPalindrome(s, 0, s.length() - 1)
+```
+
+### Variant: Palindrome ignoring spaces and case
+```java
+// "A man a plan a canal Panama" → true
+public static boolean isPalindromeClean(String s) {
+    s = s.toLowerCase().replaceAll("[^a-z0-9]", "");
+    int l = 0, r = s.length() - 1;
+    while (l < r) {
+        if (s.charAt(l++) != s.charAt(r--)) return false;
+    }
+    return true;
+}
+```
+
+### Test Cases:
+```
+"racecar"  → true
+"hello"    → false
+"madam"    → true
+"a"        → true
+""         → true
+"Aba"      → false (case-sensitive)
+```
+
+---
+
+## 2. Anagram Check
+
+Two strings are anagrams if they contain the same characters with the same frequencies.
+
+### Approach 1: Frequency Array (Bucket)
+```java
+// Time: O(n) | Space: O(1) — fixed 26-size array
+public static boolean isAnagram(String s, String t) {
+    if (s.length() != t.length()) return false;
+
+    int[] freq = new int[26];
+    for (char c : s.toCharArray()) freq[c - 'a']++;
+    for (char c : t.toCharArray()) freq[c - 'a']--;
+
+    for (int count : freq) {
+        if (count != 0) return false;
+    }
+    return true;
+}
+```
+
+### Approach 2: Sort and Compare
+```java
+// Time: O(n log n) | Space: O(n)
+public static boolean isAnagram(String s, String t) {
+    if (s.length() != t.length()) return false;
+    char[] a = s.toCharArray();
+    char[] b = t.toCharArray();
+    Arrays.sort(a);
+    Arrays.sort(b);
+    return Arrays.equals(a, b);
+}
+```
+
+### Approach 3: HashMap (for Unicode strings)
+```java
+// Time: O(n) | Space: O(k) where k = unique chars
+public static boolean isAnagram(String s, String t) {
+    if (s.length() != t.length()) return false;
+    Map<Character, Integer> map = new HashMap<>();
+    for (char c : s.toCharArray()) map.merge(c, 1, Integer::sum);
+    for (char c : t.toCharArray()) {
+        map.merge(c, -1, Integer::sum);
+        if (map.get(c) < 0) return false;
+    }
+    return true;
+}
+```
+
+### Test Cases:
+```
+"anagram", "nagaram" → true
+"rat", "car"         → false
+"listen", "silent"   → true
+"hello", "world"     → false
+```
+
+---
+
+## 3. Isomorphic Strings
+
+Two strings are isomorphic if characters in `s` can be replaced to get `t`, with a consistent one-to-one mapping (no two characters map to the same character).
+
+### Approach: Two HashMaps
+```java
+// Time: O(n) | Space: O(1) — max 256 ASCII
+public static boolean isIsomorphic(String s, String t) {
+    if (s.length() != t.length()) return false;
+
+    Map<Character, Character> sToT = new HashMap<>();
+    Map<Character, Character> tToS = new HashMap<>();
+
+    for (int i = 0; i < s.length(); i++) {
+        char sc = s.charAt(i);
+        char tc = t.charAt(i);
+
+        if (sToT.containsKey(sc)) {
+            if (sToT.get(sc) != tc) return false;
+        } else {
+            if (tToS.containsKey(tc)) return false; // two chars map to same
+            sToT.put(sc, tc);
+            tToS.put(tc, sc);
+        }
+    }
+    return true;
+}
+```
+
+### Approach: Index Array (Faster)
+```java
+// Time: O(n) | Space: O(1)
+public static boolean isIsomorphic(String s, String t) {
+    int[] mapS = new int[256];
+    int[] mapT = new int[256];
+    Arrays.fill(mapS, -1);
+    Arrays.fill(mapT, -1);
+
+    for (int i = 0; i < s.length(); i++) {
+        int cs = s.charAt(i);
+        int ct = t.charAt(i);
+
+        if (mapS[cs] == -1 && mapT[ct] == -1) {
+            mapS[cs] = ct;
+            mapT[ct] = cs;
+        } else if (mapS[cs] != ct || mapT[ct] != cs) {
+            return false;
+        }
+    }
+    return true;
+}
+```
+
+### Test Cases:
+```
+"egg", "add"   → true   (e→a, g→d)
+"foo", "bar"   → false  (o→a, o→r — conflict)
+"paper","title"→ true   (p→t, a→i, e→l, r→e)
+"ab", "aa"     → false  (a→a, b→a — two map to same)
+```
+
+---
+
+## 4. Character Frequency Count
+
+### Basic Frequency Count
+```java
+// Time: O(n) | Space: O(1)
+public static int[] charFrequency(String s) {
+    int[] freq = new int[26]; // lowercase only
+    for (char c : s.toCharArray()) {
+        freq[c - 'a']++;
+    }
+    return freq;
+}
+
+// Print frequency
+public static void printFrequency(String s) {
+    int[] freq = new int[256]; // all ASCII
+    for (char c : s.toCharArray()) freq[c]++;
+    for (int i = 0; i < 256; i++) {
+        if (freq[i] > 0) {
+            System.out.println((char) i + " : " + freq[i]);
+        }
+    }
+}
+```
+
+### Most Frequent Character
+```java
+public static char mostFrequent(String s) {
+    int[] freq = new int[256];
+    for (char c : s.toCharArray()) freq[c]++;
+    int max = 0;
+    char result = s.charAt(0);
+    for (char c : s.toCharArray()) {
+        if (freq[c] > max) {
+            max = freq[c];
+            result = c;
+        }
+    }
+    return result;
+}
+```
+
+### Top K Frequent Characters
+```java
+// Time: O(n) | Space: O(n) — Bucket Sort approach
+public static List<Character> topKFrequent(String s, int k) {
+    int[] freq = new int[26];
+    for (char c : s.toCharArray()) freq[c - 'a']++;
+
+    // Bucket: index = frequency, value = list of chars
+    List<Character>[] bucket = new List[s.length() + 1];
+    for (int i = 0; i < 26; i++) {
+        if (freq[i] > 0) {
+            if (bucket[freq[i]] == null) bucket[freq[i]] = new ArrayList<>();
+            bucket[freq[i]].add((char)('a' + i));
+        }
+    }
+
+    List<Character> result = new ArrayList<>();
+    for (int i = bucket.length - 1; i >= 0 && result.size() < k; i--) {
+        if (bucket[i] != null) result.addAll(bucket[i]);
+    }
+    return result.subList(0, Math.min(k, result.size()));
+}
+```
+
+---
+
+## 5. Bucket Algorithm Problems
+
+The **Bucket Algorithm** uses an array where the **index represents the value/frequency**, allowing O(n) sorting/grouping.
+
+### Problem 1: Sort Characters By Frequency
+```java
+// "tree" → "eert" (e appears 2x)
+// Time: O(n) | Space: O(n)
+public static String frequencySort(String s) {
+    int[] freq = new int[256];
+    for (char c : s.toCharArray()) freq[c]++;
+
+    // Bucket: index = frequency
+    List<Character>[] bucket = new List[s.length() + 1];
+    for (int i = 0; i < 256; i++) {
+        if (freq[i] > 0) {
+            int f = freq[i];
+            if (bucket[f] == null) bucket[f] = new ArrayList<>();
+            bucket[f].add((char) i);
+        }
+    }
+
+    StringBuilder sb = new StringBuilder();
+    for (int i = bucket.length - 1; i >= 0; i--) {
+        if (bucket[i] != null) {
+            for (char c : bucket[i]) {
+                for (int j = 0; j < i; j++) sb.append(c);
+            }
+        }
+    }
+    return sb.toString();
+}
+```
+
+### Problem 2: Minimum Number of Steps to Make Anagram
+```java
+// Count characters that differ
+// Time: O(n) | Space: O(1)
+public static int minSteps(String s, String t) {
+    int[] freq = new int[26];
+    for (char c : s.toCharArray()) freq[c - 'a']++;
+    for (char c : t.toCharArray()) freq[c - 'a']--;
+
+    int steps = 0;
+    for (int f : freq) if (f > 0) steps += f;
+    return steps;
+}
+```
+
+### Problem 3: Find All Anagrams in String (Sliding Window + Bucket)
+```java
+// Find start indices of all anagrams of p in s
+// Time: O(n) | Space: O(1)
+public static List<Integer> findAnagrams(String s, String p) {
+    List<Integer> result = new ArrayList<>();
+    if (s.length() < p.length()) return result;
+
+    int[] pFreq = new int[26];
+    int[] window = new int[26];
+
+    for (char c : p.toCharArray()) pFreq[c - 'a']++;
+
+    int k = p.length();
+    for (int i = 0; i < s.length(); i++) {
+        window[s.charAt(i) - 'a']++;
+
+        if (i >= k) window[s.charAt(i - k) - 'a']--;
+
+        if (Arrays.equals(window, pFreq)) result.add(i - k + 1);
+    }
+    return result;
+}
+```
+
+### Problem 4: Ransom Note (Bucket)
+```java
+// Can ransom note be made from magazine letters?
+// Time: O(n) | Space: O(1)
+public static boolean canConstruct(String ransomNote, String magazine) {
+    int[] freq = new int[26];
+    for (char c : magazine.toCharArray()) freq[c - 'a']++;
+    for (char c : ransomNote.toCharArray()) {
+        if (--freq[c - 'a'] < 0) return false;
+    }
+    return true;
+}
+```
+
+---
+
+## 6. First Non-Repeating Character
+
+```java
+// Approach 1: Two-pass with frequency array
+// Time: O(n) | Space: O(1)
+public static char firstNonRepeating(String s) {
+    int[] freq = new int[256];
+    for (char c : s.toCharArray()) freq[c]++;
+    for (char c : s.toCharArray()) {
+        if (freq[c] == 1) return c;
+    }
+    return '\0'; // not found
+}
+
+// Approach 2: LinkedHashMap (preserves order)
+public static char firstNonRepeatingMap(String s) {
+    Map<Character, Integer> map = new LinkedHashMap<>();
+    for (char c : s.toCharArray()) map.merge(c, 1, Integer::sum);
+    for (Map.Entry<Character, Integer> e : map.entrySet()) {
+        if (e.getValue() == 1) return e.getKey();
+    }
+    return '\0';
+}
+```
+
+---
+
+## 7. Count Vowels and Consonants
+
+```java
+public static void countVowelConsonant(String s) {
+    s = s.toLowerCase();
+    String vowels = "aeiou";
+    int vc = 0, cc = 0;
+
+    for (char c : s.toCharArray()) {
+        if (Character.isLetter(c)) {
+            if (vowels.indexOf(c) != -1) vc++;
+            else cc++;
+        }
+    }
+    System.out.println("Vowels: " + vc + ", Consonants: " + cc);
+}
+
+// Using Set (faster lookup)
+public static void countVowelConsonantSet(String s) {
+    Set<Character> vowelSet = Set.of('a','e','i','o','u','A','E','I','O','U');
+    int vowels = 0, consonants = 0;
+
+    for (char c : s.toCharArray()) {
+        if (Character.isLetter(c)) {
+            if (vowelSet.contains(c)) vowels++;
+            else consonants++;
+        }
+    }
+}
+```
+
+---
+
+## 8. Remove Duplicates from String
+
+```java
+// Keep only first occurrence
+// Time: O(n) | Space: O(n)
+public static String removeDuplicates(String s) {
+    StringBuilder sb = new StringBuilder();
+    boolean[] seen = new boolean[256];
+    for (char c : s.toCharArray()) {
+        if (!seen[c]) {
+            seen[c] = true;
+            sb.append(c);
+        }
+    }
+    return sb.toString();
+}
+
+// Using LinkedHashSet
+public static String removeDuplicatesLinked(String s) {
+    Set<Character> seen = new LinkedHashSet<>();
+    for (char c : s.toCharArray()) seen.add(c);
+    StringBuilder sb = new StringBuilder();
+    for (char c : seen) sb.append(c);
+    return sb.toString();
+}
+```
+
+---
+
+## 9. Check if String is Rotation
+
+"abcde" is a rotation of "cdeab" (rotated by 2).
+
+```java
+// Trick: s2 is rotation of s1 iff s2 is substring of s1+s1
+// Time: O(n) | Space: O(n)
+public static boolean isRotation(String s1, String s2) {
+    if (s1.length() != s2.length()) return false;
+    return (s1 + s1).contains(s2);
+}
+```
+
+---
+
+## 10. String Compression (Run-Length Encoding)
+
+```java
+// "aaabbbcc" → "a3b3c2"
+// Time: O(n) | Space: O(n)
+public static String compress(String s) {
+    if (s.isEmpty()) return s;
+    StringBuilder sb = new StringBuilder();
+    int count = 1;
+
+    for (int i = 1; i <= s.length(); i++) {
+        if (i < s.length() && s.charAt(i) == s.charAt(i - 1)) {
+            count++;
+        } else {
+            sb.append(s.charAt(i - 1));
+            if (count > 1) sb.append(count);
+            count = 1;
+        }
+    }
+    // Return compressed only if shorter
+    return sb.length() < s.length() ? sb.toString() : s;
+}
+```
+
+---
+
+## 11. Valid Parentheses (String)
+
+```java
+// Time: O(n) | Space: O(n)
+public static boolean isValid(String s) {
+    Deque<Character> stack = new ArrayDeque<>();
+    for (char c : s.toCharArray()) {
+        if (c == '(' || c == '[' || c == '{') {
+            stack.push(c);
+        } else {
+            if (stack.isEmpty()) return false;
+            char top = stack.pop();
+            if (c == ')' && top != '(') return false;
+            if (c == ']' && top != '[') return false;
+            if (c == '}' && top != '{') return false;
+        }
+    }
+    return stack.isEmpty();
+}
+```
+
+---
+
+## 12. Word Frequency Count
+
+```java
+// "hello world hello java" → {hello=2, world=1, java=1}
+public static Map<String, Integer> wordFrequency(String sentence) {
+    Map<String, Integer> freq = new LinkedHashMap<>();
+    for (String word : sentence.split("\\s+")) {
+        freq.merge(word.toLowerCase(), 1, Integer::sum);
+    }
+    return freq;
+}
+
+// Top K frequent words
+public static List<String> topKWords(String sentence, int k) {
+    Map<String, Integer> freq = wordFrequency(sentence);
+
+    // Bucket by frequency
+    List<String>[] bucket = new List[sentence.split("\\s+").length + 1];
+    for (Map.Entry<String, Integer> e : freq.entrySet()) {
+        int f = e.getValue();
+        if (bucket[f] == null) bucket[f] = new ArrayList<>();
+        bucket[f].add(e.getKey());
+    }
+
+    List<String> result = new ArrayList<>();
+    for (int i = bucket.length - 1; i >= 0 && result.size() < k; i--) {
+        if (bucket[i] != null) {
+            Collections.sort(bucket[i]); // alphabetical tiebreak
+            result.addAll(bucket[i]);
+        }
+    }
+    return result.subList(0, Math.min(k, result.size()));
+}
+```
+
+---
+
+## 13. Group Anagrams Together
+
+```java
+// ["eat","tea","tan","ate","nat","bat"] → [["bat"],["nat","tan"],["ate","eat","tea"]]
+// Time: O(n * k log k) | Space: O(n)
+public static List<List<String>> groupAnagrams(String[] strs) {
+    Map<String, List<String>> map = new HashMap<>();
+    for (String s : strs) {
+        char[] chars = s.toCharArray();
+        Arrays.sort(chars);
+        String key = new String(chars);
+        map.computeIfAbsent(key, k -> new ArrayList<>()).add(s);
+    }
+    return new ArrayList<>(map.values());
+}
+
+// Faster: use frequency array as key
+public static List<List<String>> groupAnagramsFast(String[] strs) {
+    Map<String, List<String>> map = new HashMap<>();
+    for (String s : strs) {
+        int[] freq = new int[26];
+        for (char c : s.toCharArray()) freq[c - 'a']++;
+        String key = Arrays.toString(freq);
+        map.computeIfAbsent(key, k -> new ArrayList<>()).add(s);
+    }
+    return new ArrayList<>(map.values());
+}
+```
+
+---
+
+## 14. Longest Palindromic Substring (Expand Around Center)
+
+```java
+// Time: O(n²) | Space: O(1)
+public static String longestPalindrome(String s) {
+    if (s.length() < 2) return s;
+    int start = 0, maxLen = 1;
+
+    for (int i = 0; i < s.length(); i++) {
+        // Odd length palindromes
+        int len1 = expand(s, i, i);
+        // Even length palindromes
+        int len2 = expand(s, i, i + 1);
+
+        int len = Math.max(len1, len2);
+        if (len > maxLen) {
+            maxLen = len;
+            start = i - (len - 1) / 2;
+        }
+    }
+    return s.substring(start, start + maxLen);
+}
+
+private static int expand(String s, int left, int right) {
+    while (left >= 0 && right < s.length()
+           && s.charAt(left) == s.charAt(right)) {
+        left--;
+        right++;
+    }
+    return right - left - 1;
+}
+```
+
+---
+
+## 15. Count and Say
+
+```
+1 → "1"
+2 → "11"      (one 1)
+3 → "21"      (two 1s)
+4 → "1211"    (one 2, one 1)
+5 → "111221"  (one 1, one 2, two 1s)
+```
+
+```java
+// Time: O(n * m) where m = length of string at step n
+public static String countAndSay(int n) {
+    String result = "1";
+    for (int i = 1; i < n; i++) {
+        StringBuilder sb = new StringBuilder();
+        int count = 1;
+        for (int j = 1; j <= result.length(); j++) {
+            if (j < result.length() && result.charAt(j) == result.charAt(j - 1)) {
+                count++;
+            } else {
+                sb.append(count).append(result.charAt(j - 1));
+                count = 1;
+            }
+        }
+        result = sb.toString();
+    }
+    return result;
+}
+```
+
+---
+
+## 🧪 Problem Summary Table
+
+| Problem | Technique | Time | Space |
+|---------|-----------|------|-------|
+| Palindrome Check | Two Pointer | O(n) | O(1) |
+| Anagram Check | Frequency Array | O(n) | O(1) |
+| Isomorphic Strings | Two HashMaps | O(n) | O(1) |
+| Top K Frequent Chars | Bucket Sort | O(n) | O(n) |
+| Find All Anagrams | Sliding Window | O(n) | O(1) |
+| First Non-Repeating | Two-Pass | O(n) | O(1) |
+| Group Anagrams | Sort + HashMap | O(nk log k) | O(n) |
+| String Rotation | String Contains | O(n) | O(n) |
+| Longest Palindrome | Expand Center | O(n²) | O(1) |
+| Valid Parentheses | Stack | O(n) | O(n) |
+
+---
+
+*More problems in `STRING_ADVANCED_PROBLEMS.md` → DP, LCS, and recursive approaches!*
